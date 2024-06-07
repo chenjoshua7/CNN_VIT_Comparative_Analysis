@@ -26,7 +26,7 @@ def predict_testing(testing_data, model, device):
 
 class InvarianceCheckerPytorch:
     def __init__(self) -> None:
-        self.augment_transform = transforms.Compose([
+        self.rotated_transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.RandomChoice([
                 transforms.RandomRotation((90, 90)),
@@ -50,16 +50,22 @@ class InvarianceCheckerPytorch:
         
         return test_rotated_ds, test_normal_ds, test_rotated_loader, test_normal_loader
     
-    def predict_models(self, model, test_rotated_loader, test_normal_loader):
-        rotated_predictions = predict_testing(test_rotated_loader, model = model)
-        normal_predictions = predict_testing(test_normal_loader, model = model)
+    def predict_models(self, model, test_rotated_loader, test_normal_loader, device):
+        print(f"Rotated Testset:")
+        print("-"* 50)
+        rotated_predictions = predict_testing(test_rotated_loader, model = model, device = device)
+        print("-"* 50)
+        print("-"* 50)
+        print(f"Normal Testset:")
+        print("-"* 50)
+        normal_predictions = predict_testing(test_normal_loader, model = model, device = device)
         
         return rotated_predictions, normal_predictions
     
-    def calculate_invariance(rotated_predictions, normal_predictions):
+    def calculate_invariance(self, rotated_predictions, normal_predictions):
         count = 0 
         
-        for i, v in zip(rotated_predictions, normal_predictions):
+        for i, v in zip(rotated_predictions[0], normal_predictions[0]):
             if i == v:
                 count += 1
         return (count)/len(rotated_predictions) 

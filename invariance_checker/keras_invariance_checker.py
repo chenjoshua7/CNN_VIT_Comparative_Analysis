@@ -16,15 +16,24 @@ def custom_preprocessing_function(image):
     
     return image
 
+def predict_keras(model, testset):
+    testset_predictions = model.predict(testset)
+    testset_predictions = np.argmax(testset_predictions, axis = 1)
+    accurracy= (np.sum(testset_predictions == testset.classes))/len(testset_predictions)
+    print(f"Accuracy: {accurracy:.4f}")
+    return testset_predictions
+
 class InvarianceCheckerKeras:
     def __init__(self) -> None:
-        self.augment_transform = ImageDataGenerator(rescale=1./255,
-                                        preprocessing_function=custom_preprocessing_function
-                                        )
-        self.normal_transform = ImageDataGenerator(rescale=1./255)
+        pass
     
     def transform_test_set(self, image_size: tuple,  path: str, batch_size: int = 64):
-        augment_testset =  self.augment_transform.flow_from_directory(
+        rotated_transform = ImageDataGenerator(rescale=1./255,
+                                        preprocessing_function=custom_preprocessing_function
+                                        )
+        normal_transform = ImageDataGenerator(rescale=1./255)
+        
+        rotated_testset =  rotated_transform.flow_from_directory(
                                                     path,
                                                     target_size=image_size[:2],
                                                     batch_size=batch_size,
@@ -33,7 +42,7 @@ class InvarianceCheckerKeras:
                                                     shuffle = False
         )
         
-        normal_testset =  self.normal_transform.flow_from_directory(
+        normal_testset =  normal_transform.flow_from_directory(
                                                     path,
                                                     target_size=image_size[:2],
                                                     batch_size=batch_size,
@@ -43,16 +52,22 @@ class InvarianceCheckerKeras:
         )
         
         
-        return augment_testset, normal_testset
+        return rotated_testset, normal_testset
     
-    def predict_models(self, model, augment_testset, normal_testset):
-        augment_predictions = model.predict(augment_testset)
-        normal_predictions = model.predict(normal_testset)
+    def predict_models(self, model, rotated_testset, normal_testset):
+        print(f"Rotated Testset:")
+        print("-"* 50)
+        rotated_predictions = predict_keras(model, rotated_testset)
+        print("-"* 50)
+        print("-"* 50)
+        print(f"Normal Testset:")
+        print("-"* 50)
+        normal_predictions = predict_keras(model, normal_testset)
         
-        return augment_predictions, normal_predictions
+        return rotated_predictions, normal_predictions
     
-    def calculate_invariance(augment_predictions, normal_predictions):
-        return (augment_predictions == normal_predictions)/len(augment_predictions)
+    def calculate_invariance(self, rotated_predictions, normal_predictions):
+        return np.sum(rotated_predictions == normal_predictions)/len(rotated_predictions)
     
     
 
