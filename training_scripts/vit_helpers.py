@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import torch
-import tqdm
+from tqdm import tqdm
 
 
 from torchvision.transforms import ToTensor
@@ -29,10 +29,10 @@ def pytorch_data_loader(path, batch_size, augment:bool = False):
             transforms.ToTensor(),
         ])
 
-        ds = datasets.ImageFolder('data/train/', transform=transform)
-        loader = data.DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=4)
-        
-        return loader
+    ds = datasets.ImageFolder('data/train/', transform=transform)
+    loader = data.DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=4)
+    
+    return loader
 
 
 def save_model(path, epoch, model, optimizer):
@@ -68,6 +68,7 @@ def load_checkpoint(path, model, optimizer):
 def predict_testing(testing_data, model, device):
     model.eval()
     predictions = []
+    y_values = []
     with torch.no_grad():
         valid_loss, valid_correct, valid_total = 0.0, 0, 0
         for x, y in tqdm(testing_data):
@@ -79,11 +80,12 @@ def predict_testing(testing_data, model, device):
             valid_total += y.size(0)
             
             predictions.extend(valid_output)
+            y_values.extend(y)
 
         val_accuracy = valid_correct / valid_total
         valid_loss /= len(testing_data)  # Normalize validation loss
         print(f'Validation Loss: {valid_loss:.4f} | Accuracy: {val_accuracy:.4f}')
-        return predictions
+        return predictions, y_values
     
 def show_images(images, num_images=3):
     fig, axs = plt.subplots(1, num_images, figsize=(15, 5))
